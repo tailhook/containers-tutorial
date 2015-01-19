@@ -1,0 +1,25 @@
+containers:
+
+  build:
+    uids: [0-65535]
+    gids: [0-65535]
+    setup:
+    - !Ubuntu trusty
+    - !UbuntuUniverse ~
+    - !Install [python3-pip, python3-dev, libxml2-dev, python3-lxml]
+    - !PipEnableDependencies ~
+    - !Py3Install [hovercraft]
+    - !Install [webfs]
+
+commands:
+
+  build: !Command
+    container: build
+    run: |
+      hovercraft presentation.rst build
+      cp hovercraft.css build/hovercraft.css
+
+  serve: !Command
+    container: build
+    run: webfsd -R /work/build -F
+
