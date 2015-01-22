@@ -274,5 +274,8 @@ User Namespaces
 ----
 
 * nix
+* pbuilder
+* systemd-nspawn
 * network shaping
+* packet loss
 * vagga
