@@ -1,4 +1,4 @@
-:css: hovercraft.css
+:css: my.css
 
 .. title:: Build Your Own Docker
 
@@ -28,11 +28,11 @@ Chroot
 .. code-block:: console
 
     # ls -la /proc/self/root
-    lrwxrwxrwx 1 root root 0 Jan 19 22:15 /proc/self/root -> /
-    # chroot .vagga/build/ /bin/sleep 1000 & pid=$!
+    /
+    # chroot /newroot sleep 1000 & pid=$!
     [4] 29988
     # ls -la /proc/$pid/root
-    lrwxrwxrwx 1 root root 0 Jan 19 22:15 /proc/29988/root -> /newroot
+    /newroot
 
 ----
 
@@ -59,6 +59,8 @@ Pivot Root
    # pivot_root /newroot /newroot/tmp
    # umount /tmp
 
+*Warning: modifies current mount namespace*
+
 ----
 
 ::
@@ -76,6 +78,15 @@ Pivot Root
 .. code-block:: console
 
     mount --bind /dev /newroot/dev
+
+----
+
+Avoiding Mount Namespace Change
+===============================
+
+* openat()
+* linkat()
+* renameat()
 
 ----
 
@@ -111,6 +122,8 @@ Network Namespace
 
 ----
 
+.. class:: small
+
 .. code-block:: console
 
     # ip netns exec isolated ip link set dev lo up
@@ -121,6 +134,8 @@ Network Namespace
            valid_lft forever preferred_lft forever
 
 ----
+
+.. class:: small
 
 .. code-block:: console
 
@@ -144,22 +159,120 @@ How Wget Resolves IP?
 
 ----
 
+.. class:: small
+
 ::
 
     write(2, "Resolving google.com (google.com)... ", 37Resolving google.com (google.com)... ) = 37
     socket(PF_LOCAL, SOCK_STREAM|SOCK_CLOEXEC|SOCK_NONBLOCK, 0) = 3
     connect(3, {sa_family=AF_LOCAL, sun_path="/var/run/nscd/socket"}, 110) = 0
     sendto(3, "\2\0\0\0\r\0\0\0\6\0\0\0hosts\0", 18, MSG_NOSIGNAL, NULL, 0) = 18
-    poll([{fd=3, events=POLLIN|POLLERR|POLLHUP}], 1, 5000) = 1 ([{fd=3, revents=POLLIN}])
-    recvmsg(3, {msg_name(0)=NULL, msg_iov(2)=[{"hosts\0", 6}, {"\310O\3\0\0\0\0\0", 8}], msg_controllen=24, {cmsg_len=20, cmsg_level=SOL_SOCKET, cmsg_type=SCM_RIGHTS, {4}}, msg_flags=MSG_CMSG_CLO
-    EXEC}, MSG_CMSG_CLOEXEC) = 14
+    poll([{fd=3, events=POLLIN|POLLERR|POLLHUP}], 1, 5000) = 1
+    recvmsg(3, {msg_name(0)=NULL, msg_iov(2)=[...]...}) = 14
 
 ----
 
-Traffic Control
+.. code-block:: console
+
+    # ip link add ext type veth peer name int
+    # ip link set int netns isolated
+    # ip addr add dev ext 192.168.17.1/24
+    # ip netns exec \
+      ip addr add dev int 192.168.17.2/24
+
+----
+
+.. code-block:: console
+
+    # unshare --net bash
+    # echo $$
+    12356
+    ...
+    # touch /run/netns/isolated
+    # mount --bind /proc/12356/ns/net \
+        /run/netns/isolated
+
+----
+
+.. code-block:: console
+
+    # nsenter --net=/run/netns/isolated /bin/bash
+
+The ``setns()`` system call
+
+----
+
+.. code-block:: console
+
+    # unshare --uts
+    # hostname something
+
+----
+
+:id: strike
+
+* resolv.conf
+* hosts
+
+----
+
+unshare --ipc
+
+----
+
+.. code-block:: console
+
+    # unshare --pid --fork sh -c 'echo $$'
+    1
+
+----
+
+Pid Namespace
+=============
+
+* /proc filesystem
+* security: ps, kill, strace
+
+----
+
+Pid 1
+=====
+
+* KILL
+* reparenting
+* Term -> Ignore
+
+----
+
+Not-a-Pid-1
+===========
+
+* KILL -> ``prctl(PR_SET_PDEATHSIG)``
+* reparenting -> ``prctl(PR_SET_CHILD_SUBREAPER)``
+* Term -> Ignore (sigaction)
+
+----
+
+unshare --user
+
+----
+
+User Namespaces
 ===============
 
+* namespaces for unprivileged users
+* mapping of uids/gids
+
 ----
 
+::
+
+    docker --net=host
+    docker --pid=host
 
 
+----
+
+* nix
+* network shaping
+* vagga

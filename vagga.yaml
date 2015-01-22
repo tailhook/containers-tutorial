@@ -1,13 +1,11 @@
 containers:
 
   build:
-    uids: [0-65535]
-    gids: [0-65535]
     setup:
     - !Ubuntu trusty
     - !UbuntuUniverse ~
     - !Install [python3-pip, python3-dev, libxml2-dev, python3-lxml]
-    - !PipEnableDependencies ~
+    - !PipConfig {dependencies: true}
     - !Py3Install [hovercraft]
     - !Install [webfs]
 
