@@ -244,6 +244,10 @@ Pid 1
 
 ----
 
+.. image:: reparenting.svg
+
+----
+
 Not-a-Pid-1
 ===========
 
