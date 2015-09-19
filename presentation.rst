@@ -274,12 +274,26 @@ User Namespaces
     docker --net=host
     docker --pid=host
 
+----
+
+Competitors
+===========
+
+* systemd-nspawn/machinectl
+* runc
+* rkt
+
+----
+
+Rust
+====
+
+* https://crates.io/crates/unshare
 
 ----
 
 * nix
 * pbuilder
-* systemd-nspawn
 * network shaping
 * packet loss
 * vagga
