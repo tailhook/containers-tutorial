@@ -38,13 +38,21 @@ commands:
         # wkhtmltopdf can't switch pages of presentation by itself
         # so find out all the steps and put each as a separate url
         run: |
-          set -ex
-          nums=$(grep -oP '(?<=step=")[0-9]+(?=")' build/index.html)
-          for i in $nums; do
-            pages="$pages http://localhost:8000/index.html#/step-$((i+1))"
-          done
+          set -e
+          pages=$(grep -oP 'step="[0-9]+"(?:\s+id="[^"]+")?' build/index.html \
+            | while read step_expr id_expr; do
+            if [ -n "$id_expr" ]; then
+              # hash name can be either id
+              eval "$id_expr"
+              echo "http://localhost:8000/index.html#/$id"
+            else
+              # .. or 1-based step number (but it's 0-based in html)
+              eval "$step_expr"
+              echo "http://localhost:8000/index.html#/step-$((step + 1))"
+            fi
+          done)
           wkhtmltopdf \
-            --javascript-delay 1000 \
+            --javascript-delay 10000 \
             --orientation Landscape \
             $pages \
             build/presentation.pdf
