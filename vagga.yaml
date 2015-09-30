@@ -9,6 +9,17 @@ containers:
     - !Py3Install [hovercraft]
     - !Install [webfs]
 
+  wkhtmltopdf:
+    setup:
+    - !Ubuntu trusty
+    - !UbuntuUniverse
+    - !Install [wget, ca-certificates]
+    - !Sh |
+        set -ex
+        cd /tmp
+        wget http://download.gna.org/wkhtmltopdf/0.12/0.12.2.1/wkhtmltox-0.12.2.1_linux-trusty-amd64.deb
+        dpkg -i wkhtmltox-0.12.2.1_linux-trusty-amd64.deb || apt-get -fy install
+
 commands:
 
   build: !Command
@@ -16,6 +27,30 @@ commands:
     run: |
       hovercraft presentation.rst build
       cp hovercraft.css build/hovercraft.css
+
+  pdf: !Supervise
+    description: Render pdf version of presentation
+    epilog: Now your pdf in build/presentation.pdf
+    # wkhtmltopdf can't use hash #xx for local files (so we serve with webfs),
+    children:
+      render: !Command
+        container: wkhtmltopdf
+        # wkhtmltopdf can't switch pages of presentation by itself
+        # so find out all the steps and put each as a separate url
+        run: |
+          set -ex
+          nums=$(grep -oP '(?<=step=")[0-9]+(?=")' build/index.html)
+          for i in $nums; do
+            pages="$pages http://localhost:8000/index.html#/step-$((i+1))"
+          done
+          wkhtmltopdf \
+            --javascript-delay 1000 \
+            --orientation Landscape \
+            $pages \
+            build/presentation.pdf
+      serve: !Command
+        container: build
+        run: webfsd -R /work/build -F
 
   serve: !Command
     container: build
