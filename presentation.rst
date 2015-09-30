@@ -244,7 +244,7 @@ Pid 1
 
 ----
 
-.. image:: reparenting.svg
+.. image:: reparenting.png
 
 ----
 
